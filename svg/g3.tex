@@ -1,0 +1,28 @@
+\documentclass[tikz,border=2mm,convert={outfile=\jobname.svg, density=400x400}]{standalone}
+%\usetikzlibrary{...}% tikz package already loaded by 'tikz' option
+\begin{document}
+\begin{tikzpicture}[x=1cm,y=1cm,
+  every node/.append style={circle, minimum size=5mm,draw=white, thick, text=white},
+  arr/.style={-latex, thick, white},
+  warn/.style={fill=red!45!black},
+  outv/.style={fill=red!15!black}]
+  \node[] (0) at (0, 0.5) {0};
+  \node[] (1) at (0, -0.5) {2};
+  \node[warn] (2) at (1, 1) {1};
+  \node (3) at (1.2, -0.8) {3};
+  \node[outv] (4) at (1.6, 0.2) {4};
+  \node[outv] (5) at (2.8, 0.5) {5};
+  \node[outv] (6) at (2.5, -0.6) {6};
+
+  \draw (0) edge[arr, bend left] (2);
+  \draw (0) edge[arr] (3);
+  \draw (1) edge[arr] (2);
+  \draw (1) edge[arr, bend right] (3);
+  \draw (2) edge[arr, bend right] (4);
+  \draw (2) edge[arr, bend left] (5);
+  \draw (3) edge[arr, bend right] (4);
+  \draw (3) edge[arr] (6);
+  \draw (4) edge[arr, bend left] (5);
+  \draw (4) edge[arr] (6);
+\end{tikzpicture}
+\end{document}

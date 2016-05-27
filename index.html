@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+
+  <head>
+    <meta charset="utf-8">
+
+    <title>reveal.js – The HTML Presentation Framework</title>
+
+    <meta name="description" content="A framework for easily creating beautiful presentations using HTML">
+    <meta name="author" content="Hakim El Hattab">
+
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+
+    <link rel="stylesheet" href="css/reveal.css">
+    <link rel="stylesheet" href="css/theme/night.css" id="theme">
+
+    <!-- Code syntax highlighting -->
+    <link rel="stylesheet" href="lib/css/zenburn.css">
+
+    <!-- Printing and PDF exports -->
+    <script>
+      var link = document.createElement( 'link' );
+      link.rel = 'stylesheet';
+      link.type = 'text/css';
+      link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
+      document.getElementsByTagName( 'head' )[0].appendChild( link );
+    </script>
+
+    <!--[if lt IE 9]>
+    <script src="lib/js/html5shiv.js"></script>
+    <![endif]-->
+  </head>
+
+  <body>
+
+    <div class="reveal">
+      <div class="slides">
+        <section>
+          <h1>Stuck-At Fault Simulation</h1>
+        </section>
+
+        <section>
+          <section>
+            <h1>Main algorithm</h1>
+          </section>
+
+          <section>
+            <h2>Psuedo code</h2>
+            <pre><code data-trim>
+circuit, patterns, faults = read_input()
+detected_faults = []
+for p in patterns:
+  output_nofault = circuit.feed(p)
+  for f in faults:
+    if circuit.with(f).feed(p) != output_nofault:
+      detected_faults.append(f)
+            </code></pre>
+          </section>
+
+          <section>
+            <h2>Parsing input</h2>
+            <p>We implemented a simple scanner and parser.</p>
+          </section>
+
+          <section>
+            <h2>Circuit representation</h2>
+            <p>We use a graph to represent a circuit.</p>
+            <ul>
+              <li>Each gate is a node.</li>
+              <li>If \(u\) is a fan-in of \(v\), then 
+                \( (u \rightarrow v) \in E \)</li>
+            </ul>
+          </section>
+
+          <section>
+            <p>The circuit graph is a DAG.</p>
+            <img src="svg/g1.svg" width="400px">
+          </section>
+
+          <section>
+            <h2>Feeding input</h2>
+            <ol>
+              <li>Find a topological order.</li>
+              <li>Calculate the output of each gate<br>
+                by the topological ordering.</li>
+            </ol>
+          </section>
+
+          <section>
+            <img src="svg/g2.svg" width="400px">
+          </section>
+
+          <section>
+            <h2>Summarize</h2>
+            <p>The algorithm runs in \(O(PF(V + E))\),
+            where \(P, F, V, E\) are the number of patterns,
+            fault, gates, wires, respectively.</p>
+          </section>
+        </section>
+
+        <section>
+          <section>
+            <h1>Some Optimization</h1>
+          </section>
+
+          <section>
+            <h2>Optimization #1</h2>
+            <p>
+              If the value of a wire is 1 in under a pattern, then <br>
+              we know that stuck-at 1 fault of this wire could never <br>
+              be detected under this pattern.
+            </p>
+          </section>
+
+          <section>
+            <h2>Optimization #2</h2>
+            <p>
+              If the fault happens at a vertex \(u\)'s input or <br>
+              output, the output of vertex \(v\) would never change if <br>
+              the topological order of \(v\) is smaller than \(u\).
+            </p>
+            <section>
+              <img src="svg/g3.svg" width="400px">
+            </section>
+          </section>
+
+          <section>
+            <h2>Optimization #3</h2>
+            <ul>
+              <li>We set up a variable \(b\) to track the gate with
+              highest topological order which its output may change.</li>
+            <li>When calculating the output of a gate \(u\), if the value
+              does change, we update \(b\) to be
+              \( b = \max \text{ord}(v) \). Where \(v\) is enumerated through
+            all the fanout of \(u\)</li>
+            <li>If \(b\) is less then the current gate's topological order,
+            we could terminate the process.</li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>Optimization #4</h2>
+            <ul>
+              <li>Maintain a priority queue tracking the gate which
+              output could possibly change.</li>
+              <li>Each time we take the min element from the priority queue 
+                and calculate its output value.</li>
+              <li>If the output value did change, we push all its
+                fanout into the priority queue.
+            </ul>
+          </section>
+
+          <section>
+            <h2>Optimization #4</h2>
+            <ul>
+              <li>The worst complexity becomes \( O(PF(W+G \log G)) \).</li>
+              <li>But we discovered that there are only a few
+                gates which output changed each time, nearly a constant
+                that is independent with \(W, G\)!</li>
+              <li>The average complexity is thus \( O(PF) \)</li>
+            </ul>
+          </section>
+        </section>
+        
+        <section>
+          <section>
+            <h2>Result</h2>
+            <p>Benchmarked with Intel i7 @ 4Ghz, g++ -O2</p>
+            <table>
+              <tr>
+                <td>Testdata</td>
+                <td>#gates</td>
+                <td>Time (s)</td>
+              </tr>
+              <tr>
+              <td>s27</td><td>13</td><td>0.001</td>
+              </tr>
+              <tr>
+              <td>s298</td><td>136</td><td>0.003</td>
+              </tr>
+              <tr>
+              <td>s35932</td><td>17793</td><td>0.614</td>
+              </tr>
+              <tr>
+              <td>s38584</td><td>20679</td><td>0.782</td>
+              </tr>
+            </table>
+          </section>
+        </section>
+
+      </div>
+
+    </div>
+
+    <script src="lib/js/head.min.js"></script>
+    <script src="js/reveal.js"></script>
+    <!--<script src="sigma.min.js"></script>-->
+   <!--<script src="jquery.js"></script>-->
+    <!--<script src="cytoscape.min.js"></script>-->
+<!--<script src="http://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>-->
+  <!--<script src="http://cytoscape.github.io/cytoscape.js/api/cytoscape.js-latest/cytoscape.min.js"></script>-->
+
+    <style type="text/css" media="all">
+      #cy {
+        width: 300px;
+        height: 300px;
+      }
+    </style>  
+
+    <script>
+
+      // Full list of configuration options available at:
+      // https://github.com/hakimel/reveal.js#configuration
+      Reveal.initialize({
+        controls: true,
+        progress: true,
+        history: true,
+        center: true,
+
+        transition: 'slide', // none/fade/slide/convex/concave/zoom
+
+        // Optional reveal.js plugins
+        dependencies: [
+          { src: 'lib/js/classList.js', condition: function() { return !document.body.classList; } },
+          { src: 'plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+          { src: 'plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+          { src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+          { src: 'plugin/zoom-js/zoom.js', async: true },
+          { src: 'plugin/notes/notes.js', async: true },
+          { src: 'plugin/math/math.js', async: true }
+        ]
+      });
+
+      Reveal.addEventListener( 'slidechanged', function( event ) {
+        if (event.indexh == 1 && event.indexv == 4) {
+          s.refresh();
+          s.refresh();
+        }
+      } );
+    </script>
+    <!--<script src="gr.js"></script>-->
+  </body>
+</html>
